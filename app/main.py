@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 
@@ -14,6 +15,15 @@ app = FastAPI(
     title="Bittensor TAO Dividends API",
     description="API for querying TAO dividends from Bittensor blockchain",
     version="0.1.0",
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify allowed origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Root endpoint
@@ -37,5 +47,3 @@ if __name__ == "__main__":
         port=settings.API_PORT,
         reload=True if settings.ENVIRONMENT == "development" else False,
     )
-
-
