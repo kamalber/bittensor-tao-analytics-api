@@ -1,8 +1,10 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from app.config import settings
+from app.db import init_db
 
 # Configure logging
 logging.basicConfig(
@@ -10,11 +12,27 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for FastAPI app
+    Initializes database
+    """
+    # Initialize database
+    logging.info("Initializing database")
+    await init_db()
+    
+    yield
+    
+    # Cleanup
+    logging.info("Shutting down...")
+
 # Create FastAPI app
 app = FastAPI(
     title="Bittensor TAO Dividends API",
     description="API for querying TAO dividends from Bittensor blockchain",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
