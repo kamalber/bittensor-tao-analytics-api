@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.db import init_db
+from app.services.cache_service import cache
 
 # Configure logging
 logging.basicConfig(
@@ -16,11 +17,15 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     """
     Lifespan context manager for FastAPI app
-    Initializes database
+    Initializes database and Redis cache
     """
     # Initialize database
     logging.info("Initializing database")
     await init_db()
+    
+    # Initialize Redis
+    logging.info("Initializing Redis cache")
+    await cache.init_redis()
     
     yield
     
@@ -65,3 +70,4 @@ if __name__ == "__main__":
         port=settings.API_PORT,
         reload=True if settings.ENVIRONMENT == "development" else False,
     )
+
