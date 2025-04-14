@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    networks:
+      - bittensor-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    networks:
+      - bittensor-network
+    command: celery -A app.worker.celery_app worker --loglevel=info
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - bittensor-network
+    volumes:
+      - redis-data:/data
+
+  db:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-bittensor_api}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bittensor-network
+
+networks:
+  bittensor-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+
+
