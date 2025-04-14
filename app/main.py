@@ -1,9 +1,11 @@
 import logging
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
+from app.api.tao_dividends import router as tao_router
 from app.db import init_db
 from app.services.cache_service import cache
 
@@ -22,13 +24,13 @@ async def lifespan(app: FastAPI):
     # Initialize database
     logging.info("Initializing database")
     await init_db()
-    
+
     # Initialize Redis
     logging.info("Initializing Redis cache")
     await cache.init_redis()
-    
+
     yield
-    
+
     # Cleanup
     logging.info("Shutting down...")
 
@@ -48,6 +50,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routes
+app.include_router(tao_router, prefix="/api/v1", tags=["tao"])
 
 # Root endpoint
 @app.get("/")
@@ -70,4 +75,3 @@ if __name__ == "__main__":
         port=settings.API_PORT,
         reload=True if settings.ENVIRONMENT == "development" else False,
     )
-
