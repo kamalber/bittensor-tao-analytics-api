@@ -25,7 +25,7 @@ services:
       - db
     networks:
       - bittensor-network
-    command: celery -A app.worker.celery_app worker --loglevel=info
+    command: celery -A app.worker worker --loglevel=info
 
   redis:
     image: redis:7-alpine

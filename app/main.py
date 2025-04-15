@@ -21,9 +21,11 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for FastAPI app
     Initializes database and Redis cache
     """
-    # Initialize database
-    logging.info("Initializing database")
-    await init_db()
+    # Skip DB initialization during testing
+    if "PYTEST_CURRENT_TEST" not in os.environ:
+        # Initialize database
+        logging.info("Initializing database")
+        await init_db()
 
     # Initialize Redis
     logging.info("Initializing Redis cache")
