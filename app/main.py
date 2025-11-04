@@ -6,6 +6,11 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.api.tao_dividends import router as tao_router
+from app.api.subnets import router as subnets_router
+from app.api.validators import router as validators_router
+from app.api.stake import router as stake_router
+from app.api.wallet import router as wallet_router
+from app.api.analytics import router as analytics_router
 from app.db import init_db
 from app.services.cache_service import cache
 
@@ -55,6 +60,11 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(tao_router, prefix="/api/v1", tags=["tao"])
+app.include_router(subnets_router, prefix="/api/v1", tags=["subnets"])
+app.include_router(validators_router, prefix="/api/v1", tags=["validators"])
+app.include_router(stake_router, prefix="/api/v1", tags=["stake"])
+app.include_router(wallet_router, prefix="/api/v1", tags=["wallet"])
+app.include_router(analytics_router, prefix="/api/v1", tags=["analytics"])
 
 # Root endpoint
 @app.get("/")

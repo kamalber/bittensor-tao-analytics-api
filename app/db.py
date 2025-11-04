@@ -41,12 +41,51 @@ class StakeAction(SQLModel, table=True):
 
 class TaoDividendQuery(SQLModel, table=True):
     __tablename__ = "tao_dividend_queries"
-    
+
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     netuid: int
     hotkey: str
     dividend: float
     from_cache: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+
+class SubnetMetrics(SQLModel, table=True):
+    __tablename__ = "subnet_metrics"
+
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    netuid: int
+    total_stake: float
+    validator_count: int
+    miner_count: int
+    emission_rate: Optional[float] = None
+    difficulty: Optional[float] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+
+class ValidatorMetrics(SQLModel, table=True):
+    __tablename__ = "validator_metrics"
+
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    netuid: int
+    hotkey: str
+    stake: float
+    trust: Optional[float] = None
+    consensus: Optional[float] = None
+    incentive: Optional[float] = None
+    dividends: Optional[float] = None
+    rank: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
+
+class WalletTransaction(SQLModel, table=True):
+    __tablename__ = "wallet_transactions"
+
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    wallet_address: str
+    transaction_type: str  # transfer, stake, unstake, dividend
+    amount: float
+    netuid: Optional[int] = None
+    hotkey: Optional[str] = None
+    transaction_hash: Optional[str] = None
+    status: str = "pending"  # pending, success, failed
     created_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime(timezone=True)))
 
 # Create tables

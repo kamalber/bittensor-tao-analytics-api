@@ -20,6 +20,7 @@ An asynchronous API service for querying Bittensor blockchain TAO dividends with
 
 ## Features
 
+- **Comprehensive API Suite**: 20+ endpoints covering all aspects of Bittensor operations
 - **Async Blockchain Integration**: Query TAO dividends using Bittensor's AsyncSubtensor
 - **Performance Optimization**: Redis caching with 2-minute TTL for fast responses
 - **API Security**: Bearer token authentication for all endpoints
@@ -27,8 +28,18 @@ An asynchronous API service for querying Bittensor blockchain TAO dividends with
   * Twitter sentiment analysis with Datura.ai
   * LLM-based scoring via Chutes.ai
   * Automated stake/unstake proportional to sentiment
+  * Manual stake/unstake operations
+- **Subnet Management**: List and monitor all subnets with detailed metrics
+- **Validator & Miner Analytics**: Track performance, stake, and rankings
+- **Wallet Management**: Monitor balances and stakes across subnets
+- **Advanced Analytics**:
+  * Historical dividend tracking
+  * Stake/unstake trend analysis
+  * Network-wide statistics
+  * Percentile and statistical analysis
+- **Pagination Support**: Efficient data retrieval for large datasets
 - **Background Processing**: Celery workers for non-blocking operations
-- **Data Persistence**: PostgreSQL database with async drivers
+- **Data Persistence**: PostgreSQL database with async drivers and comprehensive metrics storage
 - **Containerization**: Complete Docker setup for production deployment
 
 ## Requirements
@@ -99,36 +110,229 @@ celery -A app.worker.celery_app worker --loglevel=info
 
 ## API Endpoints
 
-### GET /api/v1/tao_dividends
+All endpoints require Bearer token authentication via the Authorization header.
 
+### TAO Dividends
+
+#### GET /api/v1/tao_dividends
 Returns TAO dividends for a specific subnet and hotkey with optional sentiment-based trading.
 
-#### Query Parameters
+**Query Parameters:**
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | netuid | integer | Subnet ID | DEFAULT_NETUID from config |
 | hotkey | string | Hotkey address | DEFAULT_HOTKEY from config |
 | trade | boolean | Trigger stake/unstake based on sentiment | false |
 
-#### Authentication
-Bearer token required in Authorization header
-
-#### Example Request
+**Example:**
 ```bash
 curl -X GET "http://localhost:8000/api/v1/tao_dividends?netuid=18&hotkey=5FFApaS75bv5pJHfZkqPmBzlVZ7UE1qfGiI8nsSMq4q8WUWQ&trade=true" \
      -H "Authorization: Bearer your_token_here"
 ```
 
-#### Example Response
+### Subnet Management
+
+#### GET /api/v1/subnets
+List all available subnets with pagination.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| page | integer | Page number | 1 |
+| page_size | integer | Items per page (max 100) | 20 |
+
+**Example:**
 ```bash
+curl -X GET "http://localhost:8000/api/v1/subnets?page=1&page_size=20" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/subnets/{netuid}
+Get detailed information about a specific subnet.
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/subnets/18" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/network/stats
+Get overall network statistics across all subnets.
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/network/stats" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+### Validators & Miners
+
+#### GET /api/v1/validators
+List all validators, optionally filtered by subnet.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | DEFAULT_NETUID |
+| page | integer | Page number | 1 |
+| page_size | integer | Items per page (max 100) | 20 |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/validators?netuid=18&page=1" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/validators/{hotkey}
+Get detailed information about a specific validator.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Subnet ID | DEFAULT_NETUID |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/validators/5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty?netuid=18" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/miners
+List all miners, optionally filtered by subnet.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | DEFAULT_NETUID |
+| page | integer | Page number | 1 |
+| page_size | integer | Items per page (max 100) | 20 |
+
+#### GET /api/v1/miners/{hotkey}
+Get detailed information about a specific miner.
+
+### Stake Management
+
+#### POST /api/v1/stake
+Manually stake TAO to a specific hotkey on a subnet.
+
+**Request Body:**
+```json
 {
   "netuid": 18,
   "hotkey": "5FFApaS75bv5pJHfZkqPmBzlVZ7UE1qfGiI8nsSMq4q8WUWQ",
-  "dividend": 123456789,
-  "cached": true,
-  "stake_tx_triggered": true,
-  "timestamp": "2023-04-01T12:34:56.789Z"
+  "action_type": "stake",
+  "amount": 100.0,
+  "sentiment_score": 75.5
 }
+```
+
+**Example:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/stake" \
+     -H "Authorization: Bearer your_token_here" \
+     -H "Content-Type: application/json" \
+     -d '{"netuid": 18, "hotkey": "5FFApaS...", "action_type": "stake", "amount": 100.0}'
+```
+
+#### POST /api/v1/unstake
+Manually unstake TAO from a specific hotkey on a subnet.
+
+**Request Body:** Same as stake endpoint with `action_type: "unstake"`
+
+#### GET /api/v1/stake/history
+Get history of stake/unstake actions with optional filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | - |
+| hotkey | string | Filter by hotkey | - |
+| action_type | string | Filter by action (stake/unstake) | - |
+| page | integer | Page number | 1 |
+| page_size | integer | Items per page (max 100) | 20 |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/stake/history?netuid=18&page=1" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/stake/status/{transaction_hash}
+Get the status of a specific stake/unstake transaction.
+
+### Wallet Management
+
+#### GET /api/v1/wallet/balance
+Get wallet balance including free balance, staked balance, and total balance.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| wallet_address | string | Wallet address | Configured wallet |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/wallet/balance" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/wallet/stakes
+Get all stakes for a wallet across different subnets.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| wallet_address | string | Wallet address | Configured wallet |
+
+### Analytics & Statistics
+
+#### GET /api/v1/analytics/dividends/history
+Get historical dividend data with optional filtering.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | - |
+| hotkey | string | Filter by hotkey | - |
+| days | integer | Number of days to look back (max 365) | 7 |
+| page | integer | Page number | 1 |
+| page_size | integer | Items per page (max 100) | 20 |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/analytics/dividends/history?days=30&netuid=18" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/analytics/dividends/trends
+Get dividend trends and statistics over a specified time period.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | - |
+| hotkey | string | Filter by hotkey | - |
+| days | integer | Number of days to analyze (max 365) | 30 |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/analytics/dividends/trends?days=30" \
+     -H "Authorization: Bearer your_token_here"
+```
+
+#### GET /api/v1/analytics/stake/summary
+Get stake/unstake summary statistics over a specified time period.
+
+**Query Parameters:**
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| netuid | integer | Filter by subnet ID | - |
+| days | integer | Number of days to analyze (max 365) | 30 |
+
+**Example:**
+```bash
+curl -X GET "http://localhost:8000/api/v1/analytics/stake/summary?days=30" \
+     -H "Authorization: Bearer your_token_here"
 ```
 
 ## Running Tests
